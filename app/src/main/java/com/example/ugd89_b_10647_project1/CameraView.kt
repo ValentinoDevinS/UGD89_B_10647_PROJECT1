@@ -7,18 +7,16 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import java.io.IOException
 
-class CameraView(context: Context?, private val mCamera: Camera) : SurfaceView(context),
-    SurfaceHolder.Callback {
-        private val mHolder: SurfaceHolder
+class CameraView (context: Context?, private val mCamera: Camera): SurfaceView(context), SurfaceHolder.Callback{
+    private val mHolder: SurfaceHolder
+    init{
+        mCamera.setDisplayOrientation(90)
+        mHolder = holder
+        mHolder.addCallback(this)
+        mHolder.setType((SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS))
+    }
 
-        init {
-            mCamera.setDisplayOrientation(90)
-            mHolder = holder
-            mHolder.addCallback(this)
-            mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS)
-        }
-
-    override fun surfaceCreated(surfaceHolder: SurfaceHolder) {
+    override fun surfaceCreated(surfaceHolder: SurfaceHolder){
         try{
             mCamera.setPreviewDisplay(mHolder)
             mCamera.startPreview()
@@ -27,7 +25,7 @@ class CameraView(context: Context?, private val mCamera: Camera) : SurfaceView(c
         }
     }
 
-    override fun surfaceChanged(surfaceHolder: SurfaceHolder, i: Int, i1: Int, i2: Int) {
+    override fun surfaceChanged(surfaceHolder: SurfaceHolder, i: Int, i1:Int, i2: Int){
         if(mHolder.surface == null) return
         try{
             mCamera.setPreviewDisplay(mHolder)

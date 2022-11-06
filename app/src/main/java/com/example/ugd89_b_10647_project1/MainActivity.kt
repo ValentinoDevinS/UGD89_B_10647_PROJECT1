@@ -11,26 +11,40 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
-import java.lang.Exception
 
 class MainActivity : AppCompatActivity() {
+
     private var mCamera: Camera? = null
     private var mCameraView: CameraView? = null
-    lateinit var sensorStatusTV : TextView
+    lateinit var sensorStatusTv: TextView
     lateinit var proximitySensor: Sensor
     lateinit var sensorManager: SensorManager
+    private var currentCameraId: Int = Camera.CameraInfo.CAMERA_FACING_BACK
 
-    var proximitySensorEventListener: SensorEventListener? = object  : SensorEventListener {
+    var proximitySensorEventListener: SensorEventListener? = object : SensorEventListener {
         override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
 
         }
 
         override fun onSensorChanged(event: SensorEvent) {
-            if (event.sensor.type == Sensor.TYPE_PROXIMITY) {
-                if (event.values[0] == 0f) {
-                    sensorStatusTV.text = "<<<Near>>>"
-                } else {
-                    sensorStatusTV.text = "<<<<Away>>>>"
+            if(event.values[0] == 0f){
+                if(currentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK){
+                    currentCameraId = Camera.CameraInfo.CAMERA_FACING_FRONT;
+                }
+                else{
+                    currentCameraId = Camera.CameraInfo.CAMERA_FACING_BACK;
+                }
+                if (mCameraView != null) {
+                    mCamera?.stopPreview();
+                }
+                mCamera?.release();
+
+                mCamera = Camera.open(currentCameraId)
+
+                if(mCamera != null){
+                    mCameraView = CameraView(applicationContext, mCamera!!)
+                    val camera_view = findViewById<View>(R.id.FLCamera) as FrameLayout
+                    camera_view.addView(mCameraView)
                 }
             }
         }
@@ -39,6 +53,21 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
+
+        if(proximitySensor == null){
+            Toast.makeText(this,"No Proximity sensor found in device..", Toast.LENGTH_SHORT).show()
+            finish()
+        }else{
+            sensorManager.registerListener(
+                proximitySensorEventListener,
+                proximitySensor,
+                SensorManager.SENSOR_DELAY_NORMAL
+            )
+        }
+
         try{
             mCamera = Camera.open()
         }catch (e: Exception){
@@ -51,54 +80,8 @@ class MainActivity : AppCompatActivity() {
         }
         @SuppressLint("MissingInflatedId", "LocalSuppress") val imageClose =
             findViewById<View>(R.id.imgClose) as ImageButton
-            imageClose.setOnClickListener{view: View? -> System.exit(0)}
-
-
-        sensorStatusTV = findViewById(R.id.idTVSensorStatus)
-
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-
-        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
-
-        if (proximitySensor == null) {
-            Toast.makeText(this, "No proximity sensor found in device..", Toast.LENGTH_SHORT).show()
-            finish()
-        } else {
-            sensorManager.registerListener(
-                proximitySensorEventListener,
-                proximitySensor,
-                SensorManager.SENSOR_DELAY_NORMAL
-            )
-        }
-
-        if (inPreview) {
-            camera.stopPreview();
-        }
-//NB: if you don't release the current camera before switching, you app will crash
-        camera.release();
-
-//swap the id of the camera to be used
-        if(currentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK){
-            currentCameraId = Camera.CameraInfo.CAMERA_FACING_FRONT;
-        }
-        else {
-            currentCameraId = Camera.CameraInfo.CAMERA_FACING_BACK;
-        }
-        camera = Camera.open(currentCameraId);
-
-        setCameraDisplayOrientation(CameraActivity.this, currentCameraId, camera);
-        try {
-
-            camera.setPreviewDisplay(previewHolder);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        camera.startPreview();
+        imageClose.setOnClickListener{ view: View? -> System.exit(0)}
     }
-
-
-}
-
 
 
 }
